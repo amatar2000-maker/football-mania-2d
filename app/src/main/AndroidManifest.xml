@@ -2,6 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- The game is fully offline: no INTERNET permission, no data collected. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Lets the app find the phone's text-to-speech engine (Android 11+ package visibility). -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="true"
