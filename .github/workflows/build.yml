@@ -1,4 +1,4 @@
-.github/workflows/name: Build Android App Bundle
+name: Build Android App Bundle
 
 on:
   push:
