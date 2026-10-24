@@ -49,7 +49,6 @@
   td.nm img { margin-right:0 !important; margin-inline-end:6px; }
   html[dir=rtl] .dlg-body, html[dir=rtl] .menu-wrap { direction:rtl; }
   .score-box, .res-score { direction:ltr; unicode-bidi:isolate; }
-  .modal-screen { justify-content:safe center; }
   @media (max-height:620px) { .settings-section { margin:3px 0; } .settings-section h4 { margin-bottom:3px; font-size:.82rem; } .opt-card { padding:5px 8px; } .opt-card canvas[data-stad] { width:84px; height:52px; } .opt-card canvas[data-ball] { width:28px; height:28px; } }
   td:not(.nm) { direction:ltr; unicode-bidi:isolate; }
   .foot-note { font-size:.7rem; color:#94a3b8; text-align:center; padding-bottom:4px; }
@@ -68,7 +67,10 @@
   .ovr-badge { background:#000; color:var(--neon); padding:1px 6px; border-radius:4px; font-size:.65rem; font-weight:bold; }
 
   /* Modals */
-  .modal-screen { position:absolute; inset:0; background:rgba(7,10,18,.96); z-index:50; display:none; flex-direction:column; align-items:center; justify-content:center; padding:15px; overflow-y:auto; }
+  .modal-screen { position:absolute; inset:0; background:rgba(7,10,18,.96); z-index:50; display:none; flex-direction:column; align-items:center; justify-content:flex-start; padding:15px; overflow-y:auto; }
+  .modal-screen > :first-child { margin-top:auto; } .modal-screen > :last-child { margin-bottom:auto; }
+  .settings-wrap { width:100%; max-width:640px; display:flex; flex-direction:column; align-items:center; }
+  @media (max-height:600px) and (min-width:620px) { .settings-wrap { max-width:980px; display:grid; grid-template-columns:1fr 1fr; gap:0 18px; align-items:start; } .settings-wrap .settings-section { margin:3px 0; } }
   .settings-section { margin:7px 0; width:100%; max-width:640px; text-align:center; }
   .settings-section h4 { color:var(--gold); margin-bottom:6px; font-size:.92rem; }
   .options-grid { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
@@ -196,6 +198,7 @@
   <div class="logo" style="font-size:1.15rem; color:var(--gold);" data-i18n="p1Setup"></div>
   <p style="color:#aaa; font-size:.78rem; margin:3px 0;"><span data-i18n="configFor"></span> <span id="chosenTeamName" style="color:var(--neon); font-weight:bold;"></span></p>
 
+  <div class="settings-wrap">
   <div class="settings-section">
     <h4 data-i18n="tacticsH"></h4>
     <div class="options-grid" data-cat="tactics">
@@ -241,6 +244,7 @@
     </div>
   </div>
 
+  </div>
   <div style="display:flex; gap:10px; margin-top:8px;">
     <button class="btn btn-secondary" style="padding:9px 20px;" onclick="closeMatchSettings()" data-i18n="cancel"></button>
     <button class="btn" style="padding:9px 28px; font-size:.95rem;" onclick="proceedAppSettings()" data-i18n="continueBtn"></button>
@@ -581,7 +585,7 @@ const I18N = {
     settingsT: '⚙️ الإعدادات', language: 'اللغة', sound: 'الصوت', vibration: 'الاهتزاز', on: 'تشغيل', off: 'إيقاف', howTo: 'طريقة اللعب', showTut: 'إظهار الشرح', fullscreenL: 'ملء الشاشة', close: 'إغلاق',
     tutQueued: '❓ سيظهر الشرح في مباراتك القادمة', commentary: 'التعليق الصوتي', voiceMissing: 'الصوت العربي غير مثبت على هاتفك', installVoice: 'تثبيت الصوت', testVoice: 'أهلاً بكم في فوتبول مانيا! انطلقت المباراة!',
     back: 'رجوع ➡', tapTeam: 'اختر فريقاً', chooseTeam: 'اختر فريقك', p1Choose: 'اللاعب 1: اختر فريقك', p2Choose: 'اللاعب 2: اختر فريقك', nations: 'المنتخبات',
-    p1Setup: '⚙️ إعدادات المباراة والخطة', configFor: 'إعداد المباراة لفريق', tacticsH: '📋 الخطة', tacBal: '⚖️ متوازنة (1-2-2)', tacAtt: '🔥 هجوم كاسح (1-1-3)', tacDef: '🛡️ جدار حديدي (1-3-1)',
+    p1Setup: '⚙️ إعدادات المباراة والخطة', configFor: 'إعداد المباراة لفريق', tacticsH: '📋 الخطة', tacBal: '⚖️ متوازنة <bdi dir="ltr" style="white-space:nowrap">(1-2-2)</bdi>', tacAtt: '🔥 هجوم كاسح <bdi dir="ltr" style="white-space:nowrap">(1-1-3)</bdi>', tacDef: '🛡️ جدار حديدي <bdi dir="ltr" style="white-space:nowrap">(1-3-1)</bdi>',
     goalsH: '🎯 عدد أهداف الفوز', goals1: 'هدف واحد', goals3: '3 أهداف', goals5: '5 أهداف',
     ballH: '⚽ سرعة الكرة ولونها', ballSlow: 'بطيئة (بيضاء)', ballMed: 'متوسطة (زرقاء)', ballFast: 'سريعة (حمراء)',
     stadH: '🏟️ الملعب', stClassic: '🌿 العشب الكلاسيكي', stNight: '🌙 الملعب الليلي', stElite: '✨ الملعب الذهبي',
@@ -812,8 +816,10 @@ function discSprite(team, p, s) {
   c.beginPath(); c.arc(cx, cy, R - 3.4, 0, TAU); c.lineWidth = 3.8; c.strokeStyle = s; c.stroke();
   c.beginPath(); c.arc(cx, cy, R - 5.6, 0, TAU); c.lineWidth = 1; c.strokeStyle = 'rgba(0,0,0,.5)'; c.stroke();
   // emblem plate
-  c.beginPath(); c.arc(cx, cy, R - 6.4, 0, TAU); c.fillStyle = '#f2f5fa'; c.fill();
-  c.lineWidth = 1; c.strokeStyle = 'rgba(0,0,0,.35)'; c.stroke();
+  { const pl = c.createRadialGradient(cx - R * .2, cy - R * .25, 1, cx, cy, R - 6.4);
+    pl.addColorStop(0, shade(p, luminance(p) > .7 ? -.08 : .12)); pl.addColorStop(1, shade(p, luminance(p) > .7 ? -.3 : -.25));
+    c.beginPath(); c.arc(cx, cy, R - 6.4, 0, TAU); c.fillStyle = pl; c.fill();
+    c.lineWidth = 1; c.strokeStyle = 'rgba(0,0,0,.45)'; c.stroke(); }
   if (team.kind === 'nation') {
     const fw = R * 1.19, fh = fw * 0.665;
     c.save(); c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 2; c.shadowOffsetY = 1; c.fillStyle = '#fff'; c.fillRect(cx - fw / 2, cy - fh / 2, fw, fh); c.restore();
@@ -1875,9 +1881,14 @@ window.addEventListener('resize', () => { bgResize(); fitCanvas(); });
 window.addEventListener('orientationchange', () => setTimeout(() => { bgResize(); fitCanvas(); }, 250));
 
 function pickAwayKit(h, a) {
-  const cands = [[a.p, a.s], [a.s, a.p], ['#00d2ff', '#003a5c'], ['#ff9f1c', '#4a2a00'], ['#ffffff', '#222222']];
-  for (const [p, s] of cands) if (colorDist(p, h.p) > 130) return { ...a, p, s };
-  return { ...a, p: '#00d2ff', s: '#003a5c' };
+  // The opponent's disc colour must stand out clearly from yours (and two light kits never clash).
+  const ok = p => colorDist(p, h.p) > 170 && colorDist(p, h.s) > 90 && !(luminance(p) > .72 && luminance(h.p) > .72);
+  const cands = [[a.p, a.s], [a.s, a.p]];
+  for (const [p, s] of cands) if (ok(p)) return { ...a, p, s: colorDist(s, p) > 120 ? s : (luminance(p) > .5 ? '#14213d' : '#ffffff') };
+  const alts = [['#ff6b00', '#1a1a1a'], ['#e63946', '#ffffff'], ['#00b4d8', '#03045e'], ['#7b2cbf', '#ffd166'], ['#2dc653', '#ffffff'], ['#1d4ed8', '#ffffff'], ['#111827', '#ffcc00']];
+  let best = alts[0], bd = -1;
+  for (const k of alts) { const d = Math.min(colorDist(k[0], h.p), colorDist(k[0], h.s) * 1.5); if (ok(k[0]) && d > bd) { bd = d; best = k; } }
+  return { ...a, p: best[0], s: best[1] };
 }
 function layoutFor(tac) {
   if (tac === 'ATTACKING') return [[95, .5], [205, .5], [310, .2], [310, .5], [310, .8]];
