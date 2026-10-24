@@ -79,6 +79,7 @@
   #pitchCanvas { display:block; border-radius:10px; box-shadow:0 0 28px rgba(0,0,0,.85); touch-action:none; }
   .rotate-hint { display:none; position:absolute; left:50%; top:12px; transform:translateX(-50%); z-index:5; background:rgba(10,16,30,.92); border:1px solid var(--neon); color:#eafff4; padding:8px 14px; border-radius:20px; font-size:.78rem; font-weight:800; white-space:nowrap; cursor:pointer; }
   @media (orientation:portrait) and (max-width:700px) { .rotate-hint { display:block; } .rotate-hint.hide { display:none; } }
+  @media (max-height:520px) { .commentary-bar { display:none !important; } .hud { padding:2px 8px; } .first-to { display:none; } #gameScreen { gap:2px; padding:2px; } }
   .commentary-bar { width:100%; max-width:960px; background:#090d16; color:#fff; padding:4px 10px; border-radius:6px; border-left:4px solid var(--neon); font-size:.76rem; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; }
 
   /* Overlays */
@@ -277,8 +278,8 @@ const CW = 960, CH = 600;            // canvas logical size
 const OX = 100, OY = 90;             // physics origin inside canvas
 const BW = 760, BH = 420;            // physics field
 const PL = 40, PR = BW - 40, PT = 24, PB = BH - 24;   // touchlines / goal lines
-const GT = BH * 0.32, GB = BH * 0.68, GD = 34;        // goal mouth + depth
-const DR = 26, BR = 15;              // disc / ball radius
+const GT = BH * 0.30, GB = BH * 0.70, GD = 36;        // goal mouth + depth
+const DR = 32, BR = 18;              // disc / ball radius
 const S = Math.min(2, window.devicePixelRatio || 1);
 const STEP = 1000 / 60;
 const TAU = Math.PI * 2;
@@ -591,7 +592,7 @@ const SPR = {};
 function discSprite(team, p, s) {
   const key = team.kind + team.id + p + s;
   if (SPR[key]) return SPR[key];
-  const SC = 2, R = DR, T = 8, pad = 6, W = (R + pad) * 2, H = (R + pad) * 2 + T;
+  const SC = 2, R = DR, T = Math.round(DR * 0.3), pad = 6, W = (R + pad) * 2, H = (R + pad) * 2 + T;
   const cv = document.createElement('canvas'); cv.width = W * SC; cv.height = H * SC;
   const c = cv.getContext('2d'); c.scale(SC, SC);
   const cx = R + pad, cy = R + pad;
@@ -611,12 +612,12 @@ function discSprite(team, p, s) {
   c.beginPath(); c.arc(cx, cy, R - 6.4, 0, TAU); c.fillStyle = '#f2f5fa'; c.fill();
   c.lineWidth = 1; c.strokeStyle = 'rgba(0,0,0,.35)'; c.stroke();
   if (team.kind === 'nation') {
-    const fw = 31, fh = 20.6;
+    const fw = R * 1.19, fh = fw * 0.665;
     c.save(); c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 2; c.shadowOffsetY = 1; c.fillStyle = '#fff'; c.fillRect(cx - fw / 2, cy - fh / 2, fw, fh); c.restore();
     drawFlag(c, team.id, cx - fw / 2, cy - fh / 2, fw, fh);
     c.lineWidth = 1; c.strokeStyle = 'rgba(0,0,0,.55)'; c.strokeRect(cx - fw / 2, cy - fh / 2, fw, fh);
   } else {
-    drawCrest(c, team, cx - 10.5, cy - 12.5, 21, 25);
+    drawCrest(c, team, cx - R * 0.4, cy - R * 0.48, R * 0.8, R * 0.96);
   }
   // gloss
   c.save(); c.beginPath(); c.arc(cx, cy, R - 0.5, 0, TAU); c.clip();
@@ -1364,8 +1365,8 @@ function buildStadium(type) {
   c.strokeRect(X(PL), Y(PT), PR - PL, PB - PT);
   c.beginPath(); c.moveTo(X(BW / 2), Y(PT)); c.lineTo(X(BW / 2), Y(PB)); c.stroke();
   c.beginPath(); c.arc(X(BW / 2), Y(BH / 2), 58, 0, TAU); c.stroke();
-  c.strokeRect(X(PL), Y(BH * .22), 95, BH * .56); c.strokeRect(X(PR) - 95, Y(BH * .22), 95, BH * .56);
-  c.strokeRect(X(PL), Y(BH * .35), 38, BH * .3); c.strokeRect(X(PR) - 38, Y(BH * .35), 38, BH * .3);
+  c.strokeRect(X(PL), Y(BH * .18), 100, BH * .64); c.strokeRect(X(PR) - 100, Y(BH * .18), 100, BH * .64);
+  c.strokeRect(X(PL), Y(BH * .26), 42, BH * .48); c.strokeRect(X(PR) - 42, Y(BH * .26), 42, BH * .48);
   c.beginPath(); c.arc(X(PL + 70), Y(BH / 2), 40, -0.95, 0.95); c.stroke(); c.beginPath(); c.arc(X(PR - 70), Y(BH / 2), 40, Math.PI - 0.95, Math.PI + 0.95); c.stroke();
   [[PL, PT, 0], [PR, PT, Math.PI / 2], [PR, PB, Math.PI], [PL, PB, -Math.PI / 2]].forEach(([cx, cy, a]) => { c.beginPath(); c.arc(X(cx), Y(cy), 14, a, a + Math.PI / 2); c.stroke(); });
   c.fillStyle = th.line; [[BW / 2, BH / 2, 5], [PL + 70, BH / 2, 3.5], [PR - 70, BH / 2, 3.5]].forEach(([sx, sy, r]) => { c.beginPath(); c.arc(X(sx), Y(sy), r, 0, TAU); c.fill(); });
@@ -1410,14 +1411,19 @@ function buildStadium(type) {
    10. MATCH ENGINE
    ========================================================== */
 const canvas = $('pitchCanvas'), gctx = canvas.getContext('2d');
+const VIEW_FULL = { x: 0, y: 0, w: CW, h: CH }, VIEW_ZOOM = { x: 78, y: 62, w: CW - 156, h: CH - 124 };
+let VIEW = VIEW_FULL;
 canvas.width = CW * S; canvas.height = CH * S;
 let game = null, animId = null, lastT = 0, acc = 0;
 
 function fitCanvas() {
   const wrap = $('boardWrap'); if (!wrap) return;
   const w = wrap.clientWidth, h = wrap.clientHeight; if (!w || !h) return;
-  const k = Math.min(w / CW, h / CH);
-  canvas.style.width = Math.floor(CW * k) + 'px'; canvas.style.height = Math.floor(CH * k) + 'px';
+  // On small screens (phones) zoom the camera onto the pitch and hide most of the stands
+  const v = (h < 560 || w < 760) ? VIEW_ZOOM : VIEW_FULL;
+  if (v !== VIEW || canvas.width !== Math.round(v.w * S)) { VIEW = v; canvas.width = Math.round(v.w * S); canvas.height = Math.round(v.h * S); }
+  const k = Math.min(w / VIEW.w, h / VIEW.h);
+  canvas.style.width = Math.floor(VIEW.w * k) + 'px'; canvas.style.height = Math.floor(VIEW.h * k) + 'px';
 }
 window.addEventListener('resize', () => { bgResize(); fitCanvas(); });
 window.addEventListener('orientationchange', () => setTimeout(() => { bgResize(); fitCanvas(); }, 250));
@@ -1465,7 +1471,7 @@ function updateTurnUI() {
 function getCoords(e) {
   const rect = canvas.getBoundingClientRect(), t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
   const cx = t ? t.clientX : e.clientX, cy = t ? t.clientY : e.clientY;
-  return { x: (cx - rect.left) * (CW / (rect.width || CW)) - OX, y: (cy - rect.top) * (CH / (rect.height || CH)) - OY };
+  return { x: (cx - rect.left) * (VIEW.w / (rect.width || VIEW.w)) + VIEW.x - OX, y: (cy - rect.top) * (VIEW.h / (rect.height || VIEW.h)) + VIEW.y - OY };
 }
 function onInputStart(e) {
   const g = game; if (!g || g.moving || g.paused || g.over || g.cele || simPaused) return;
@@ -1766,7 +1772,7 @@ function drawCelebration() {
 }
 function render() {
   const g = game; if (!g) return;
-  gctx.setTransform(S, 0, 0, S, 0, 0); gctx.clearRect(0, 0, CW, CH);
+  gctx.setTransform(S, 0, 0, S, -VIEW.x * S, -VIEW.y * S); gctx.clearRect(0, 0, CW, CH);
   gctx.save();
   if (g.shake > 0) gctx.translate((Math.random() - .5) * g.shake, (Math.random() - .5) * g.shake);
   gctx.drawImage(g.stadiumCv, 0, 0, CW, CH);
