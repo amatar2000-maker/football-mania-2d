@@ -32,6 +32,7 @@ public class MainActivity extends Activity {
     private Object backCallback; // OnBackInvokedCallback on API 33+
     private TextToSpeech tts;
     private volatile boolean ttsReady = false;
+    private String pendingText = null, pendingLang = null;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -64,7 +65,11 @@ public class MainActivity extends Activity {
             }
         });
 
-        tts = new TextToSpeech(this, status -> ttsReady = (status == TextToSpeech.SUCCESS));
+        // Prefer Google's speech engine (best Arabic voices); Android falls back to the default engine if it is missing.
+        tts = new TextToSpeech(this, status -> {
+            ttsReady = (status == TextToSpeech.SUCCESS);
+            if (ttsReady && pendingText != null) runOnUiThread(() -> { doSpeak(pendingText, pendingLang); pendingText = null; });
+        }, "com.google.android.tts");
         web.addJavascriptInterface(new NativeBridge(), "FMNative");
         setContentView(web);
         hideSystemUi();
@@ -96,8 +101,11 @@ public class MainActivity extends Activity {
         public String ttsStatus(String lang) {
             if (tts == null) return "none";
             if (!ttsReady) return "pending";
-            try { return tts.isLanguageAvailable(Locale.forLanguageTag(lang)) >= TextToSpeech.LANG_AVAILABLE ? "ok" : "missing"; }
-            catch (Exception e) { return "missing"; }
+            try {
+                for (String tag : candidates(lang))
+                    if (tts.isLanguageAvailable(Locale.forLanguageTag(tag)) >= TextToSpeech.LANG_AVAILABLE) return "ok";
+                return "missing";
+            } catch (Exception e) { return "missing"; }
         }
 
         @JavascriptInterface
@@ -111,15 +119,37 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** Voices to try for a language, most specific first. */
+    private static String[] candidates(String lang) {
+        if (lang != null && lang.startsWith("ar"))
+            return new String[]{"ar-SA", "ar-AE", "ar-EG", "ar-XA", "ar"};
+        return new String[]{"en-GB", "en-US", "en-AU", "en-IN", "en"};
+    }
+
+    private boolean useLanguage(String lang) {
+        for (String tag : candidates(lang)) {
+            try {
+                Locale loc = Locale.forLanguageTag(tag);
+                if (tts.isLanguageAvailable(loc) >= TextToSpeech.LANG_AVAILABLE) {
+                    int r = tts.setLanguage(loc);
+                    if (r != TextToSpeech.LANG_MISSING_DATA && r != TextToSpeech.LANG_NOT_SUPPORTED) return true;
+                }
+            } catch (Exception ignored) { }
+        }
+        return false;
+    }
+
     private void doSpeak(String text, String lang) {
-        if (tts == null || !ttsReady || text == null) return;
+        if (tts == null || text == null) return;
+        if (!ttsReady) { pendingText = text; pendingLang = lang; return; }
         try {
-            int r = tts.setLanguage(Locale.forLanguageTag(lang == null ? "en-GB" : lang));
-            if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
-                if (lang != null && lang.startsWith("ar")) r = tts.setLanguage(new Locale("ar"));
-                if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) return;
+            boolean ar = lang != null && lang.startsWith("ar");
+            if (!useLanguage(lang)) {
+                // Arabic voice not installed: stay silent rather than reading Arabic with an English voice.
+                if (ar) return;
+                try { tts.setLanguage(Locale.getDefault()); } catch (Exception ignored) { }
             }
-            tts.setSpeechRate(lang != null && lang.startsWith("ar") ? 1.0f : 1.1f);
+            tts.setSpeechRate(ar ? 1.0f : 1.08f);
             tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "fm");
         } catch (Exception ignored) { }
     }
